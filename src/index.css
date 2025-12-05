@@ -40,7 +40,7 @@ body {
     linear-gradient(115deg, #0d0d0d 0%, #141421 45%, #1b1b2c 80%, #222236 100%);
   color: #f5f5f5;
   min-height: 100vh;
-  padding-top: 0;
+  padding-top: env(safe-area-inset-top, 0);
 }
 
 button {
