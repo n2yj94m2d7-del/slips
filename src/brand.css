@@ -1,0 +1,23 @@
+html, body {
+  padding: 0;
+  margin: 0;
+  background: #0B1620;
+  background: linear-gradient(180deg, #0B1620 0%, #121826 100%);
+  min-height: 100vh;
+  height: 100%;
+  color-scheme: dark;
+}
+
+:root {
+  --safe-top: env(safe-area-inset-top);
+}
+
+body {
+  background-attachment: fixed;
+  padding-top: env(safe-area-inset-top);
+  background: linear-gradient(
+    180deg,
+    #0B1620 calc(0% + var(--safe-top)),
+    #121826 100%
+  );
+}
