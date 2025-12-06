@@ -1142,7 +1142,8 @@ function PlayerField({
                 type="button"
                 onClick={() => {
                   onSelect(player);
-                  inputRef.current?.blur();
+                  // Delay to ensure mobile keyboards close reliably
+                  setTimeout(() => inputRef.current?.blur?.(), 0);
                 }}
                 className="flex w-full items-center gap-3 px-3 py-3 text-left text-sm text-white hover:bg-white/5"
               >
