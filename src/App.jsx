@@ -306,8 +306,8 @@ export default function App() {
           <AddPanel
             onSubmit={addLegToQueue}
             panelRef={addPanelRef}
-            containerClassName="overflow-hidden rounded-3xl border border-white/5 bg-[var(--panel)] p-5 shadow-[0_20px_50px_rgba(0,0,0,0.45)] flex flex-col"
-            scrollClassName="mt-4 space-y-4 pr-1 pb-2"
+            containerClassName="overflow-hidden rounded-3xl border border-white/5 bg-[var(--panel)] p-5 shadow-[0_20px_50px_rgba(0,0,0,0.45)] flex flex-col gap-4"
+            scrollClassName="space-y-4"
           />
         )}
 
@@ -929,8 +929,8 @@ function AddPanel({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-        <div className={`${scrollClassName} flex-1 overflow-y-auto pr-1`}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <div className={`${scrollClassName} pr-1`}>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {["player", "spread", "total", "winner"].map((value) => (
               <button
@@ -1040,7 +1040,7 @@ function AddPanel({
           )}
 
           {type !== "winner" && (
-            <div className="grid grid-cols-3 items-end gap-3">
+            <div className="grid grid-cols-3 items-stretch gap-3">
               <Field
                 label={type === "spread" ? "Spread line" : "Line"}
                 value={line}
@@ -1054,7 +1054,7 @@ function AddPanel({
                   key={value}
                   type="button"
                   onClick={() => setDirection(value)}
-                  className={`flex w-full min-w-0 items-center justify-center rounded-2xl border px-4 py-2.5 text-sm font-semibold capitalize transition ${
+                  className={`flex w-full min-w-0 items-center justify-center rounded-2xl border px-4 py-3 text-sm font-semibold capitalize transition ${
                     direction === value
                       ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]"
                       : "border-white/10 bg-white/5 text-gray-300"
@@ -1066,7 +1066,7 @@ function AddPanel({
             </div>
           )}
 
-          <div className="pt-2">
+          <div className="pt-1">
             <button
               type="submit"
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] px-4 py-3 text-base font-semibold text-[#0b0b18] transition hover:opacity-90"
