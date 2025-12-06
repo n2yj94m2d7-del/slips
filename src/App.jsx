@@ -1097,7 +1097,7 @@ function Field({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full bg-transparent text-sm text-white placeholder:text-gray-500 focus:outline-none"
+          className="w-full bg-transparent text-base text-white placeholder:text-gray-500 focus:outline-none"
         />
       </div>
     </label>
@@ -1126,7 +1126,7 @@ function PlayerField({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder="Search player..."
-            className="w-full bg-transparent text-sm text-white placeholder:text-gray-500 focus:outline-none"
+            className="w-full bg-transparent text-base text-white placeholder:text-gray-500 focus:outline-none"
           />
           {(isSearching || liveLoading) && (
             <span className="text-xs text-gray-400">Searching...</span>
@@ -1143,7 +1143,18 @@ function PlayerField({
                 onClick={() => {
                   onSelect(player);
                   // Delay to ensure mobile keyboards close reliably
-                  setTimeout(() => inputRef.current?.blur?.(), 0);
+                  requestAnimationFrame(() => {
+                    inputRef.current?.blur?.();
+                    if (typeof document !== "undefined") {
+                      document.activeElement?.blur?.();
+                    }
+                    setTimeout(() => {
+                      inputRef.current?.blur?.();
+                      if (typeof document !== "undefined") {
+                        document.activeElement?.blur?.();
+                      }
+                    }, 30);
+                  });
                 }}
                 className="flex w-full items-center gap-3 px-3 py-3 text-left text-sm text-white hover:bg-white/5"
               >
