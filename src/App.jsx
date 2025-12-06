@@ -3,9 +3,9 @@ import {
   Activity,
   Camera,
   CheckCircle2,
-  Circle,
   List,
   Plus,
+  ChevronUp,
   Trash2,
   TrendingUp,
   User,
@@ -123,18 +123,27 @@ const defaultModes = ["add", "tracking"];
 export default function App() {
   const [mode, setMode] = useState("add");
   const [legs, setLegs] = useState([]);
+  const [queuedLegs, setQueuedLegs] = useState([]);
   const addPanelRef = useRef(null);
   const [lastUpdate, setLastUpdate] = useState(null);
   const tickRef = useRef(null);
   const [showSplash, setShowSplash] = useState(true);
+  const [showQueueDrawer, setShowQueueDrawer] = useState(false);
 
   const liveCount = useMemo(
     () => legs.filter((leg) => leg.status === "live").length,
     [legs]
   );
 
-  const addLeg = (leg) => {
-    setLegs((prev) => [...prev, leg]);
+  const addLegToQueue = (leg) => {
+    setQueuedLegs((prev) => [...prev, leg]);
+    setShowQueueDrawer(true);
+  };
+
+  const moveQueueToTracking = () => {
+    if (!queuedLegs.length) return;
+    setLegs((prev) => [...prev, ...queuedLegs]);
+    setQueuedLegs([]);
     setMode("tracking");
   };
 
@@ -148,6 +157,10 @@ export default function App() {
 
   const removeLeg = (id) => {
     setLegs((prev) => prev.filter((leg) => leg.id !== id));
+  };
+
+  const clearLegs = () => {
+    setLegs([]);
   };
 
   const refreshLiveStats = async () => {
@@ -261,8 +274,8 @@ export default function App() {
           result: leg.result || 0,
         }))
       );
-      setLastUpdate(new Date());
-    }
+    setLastUpdate(new Date());
+  }
   };
 
   useEffect(() => {
@@ -278,15 +291,22 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen px-4 pb-14 sm:px-6 md:px-8 lg:px-12">
+    <div className="min-h-screen px-4 pb-24 sm:px-6 md:px-8 lg:px-12">
       {showSplash && <Splash />}
       <div className="mx-auto max-w-4xl space-y-6">
         <Header liveCount={liveCount} />
 
-        <ModeTabs mode={mode} onChange={setMode} />
+        <ModeTabs
+          mode={mode}
+          onChange={setMode}
+          queuedCount={queuedLegs.length}
+        />
 
         {mode === "add" && (
-          <AddPanel onSubmit={addLeg} panelRef={addPanelRef} />
+          <AddPanel
+            onSubmit={addLegToQueue}
+            panelRef={addPanelRef}
+          />
         )}
 
         {mode === "tracking" && (
@@ -294,12 +314,33 @@ export default function App() {
             legs={legs}
             updateStatus={updateStatus}
             removeLeg={removeLeg}
+            clearLegs={clearLegs}
             onAddClick={() => setMode("add")}
             onManualRefresh={refreshLiveStats}
             lastUpdate={lastUpdate}
+            queuedLegs={queuedLegs}
+            onSendQueued={moveQueueToTracking}
           />
         )}
       </div>
+      {queuedLegs.length > 0 && (
+        <QueueDrawer
+          items={queuedLegs}
+          open={showQueueDrawer}
+          onToggle={() => setShowQueueDrawer((o) => !o)}
+          onRemove={(id) =>
+            setQueuedLegs((prev) => prev.filter((leg) => leg.id !== id))
+          }
+          onSend={() => {
+            moveQueueToTracking();
+            setShowQueueDrawer(false);
+          }}
+          onAddMore={() => {
+            setMode("add");
+            setShowQueueDrawer(false);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -325,7 +366,7 @@ function Splash() {
   );
 }
 
-function ModeTabs({ mode, onChange }) {
+function ModeTabs({ mode, onChange, queuedCount = 0 }) {
   return (
     <div className="flex rounded-3xl bg-[var(--panel)] p-1 shadow-[0_10px_40px_rgba(0,0,0,0.5)] border border-[rgba(255,255,255,0.04)]">
       {defaultModes.map((key) => (
@@ -343,7 +384,7 @@ function ModeTabs({ mode, onChange }) {
           ) : (
             <List className="h-4 w-4" />
           )}
-          {key === "add" ? "Add line" : "Track positions"}
+          {key === "add" ? "Add to slip" : "Track slips"}
           {key === "tracking" && (
             <span
               className={`ml-1 inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-2 text-xs ${
@@ -352,7 +393,7 @@ function ModeTabs({ mode, onChange }) {
                   : "bg-gray-800 text-gray-300"
               }`}
             >
-              •
+              {queuedCount > 0 ? `${queuedCount} in slip` : "•"}
             </span>
           )}
         </button>
@@ -381,7 +422,17 @@ function ActionCard({ icon, title, subtitle, onClick, tone = "green" }) {
   );
 }
 
-function TrackList({ legs, updateStatus, removeLeg, onAddClick, onManualRefresh, lastUpdate }) {
+function TrackList({
+  legs,
+  updateStatus,
+  removeLeg,
+  clearLegs,
+  onAddClick,
+  onManualRefresh,
+  lastUpdate,
+  queuedLegs = [],
+  onSendQueued,
+}) {
   if (!legs.length) {
     return (
       <div className="rounded-3xl border border-white/5 bg-[var(--panel)] p-8 text-center text-gray-300 shadow-[0_10px_30px_rgba(0,0,0,0.4)]">
@@ -391,26 +442,76 @@ function TrackList({ legs, updateStatus, removeLeg, onAddClick, onManualRefresh,
         <p className="text-sm text-gray-400">
           Add a line to your slip to start monitoring it live.
         </p>
-        <button
-          onClick={onAddClick}
-          className="mt-4 inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-gray-950 hover:opacity-90 transition"
-        >
-          <Plus className="h-4 w-4" />
-          Add line
-        </button>
+        {queuedLegs.length > 0 && (
+          <div className="mt-4 rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--accent-2)]">
+            {queuedLegs.length} in slip and ready to send.
+          </div>
+        )}
+        <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
+          <button
+            onClick={onAddClick}
+            className="inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-gray-950 hover:opacity-90 transition"
+          >
+            <Plus className="h-4 w-4" />
+            Add to slip
+          </button>
+          {queuedLegs.length > 0 && (
+            <button
+              onClick={onSendQueued}
+              className="inline-flex items-center gap-2 rounded-full border border-[var(--accent-border)] px-4 py-2 text-sm font-semibold text-[var(--accent-2)] hover:bg-[var(--accent-soft)] transition"
+            >
+              <List className="h-4 w-4" />
+              Track slip
+            </button>
+          )}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
+      {queuedLegs.length > 0 && (
+        <div className="flex flex-col gap-2 rounded-3xl border border-[var(--accent-border)] bg-[var(--card-soft)] p-4 text-sm text-white shadow-[0_12px_30px_rgba(0,0,0,0.35)] sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <List className="h-4 w-4 text-[var(--accent-2)]" />
+            <span>
+              {queuedLegs.length} {queuedLegs.length === 1 ? "line" : "lines"} in slip ready to track.
+            </span>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <button
+              onClick={onAddClick}
+              className="rounded-2xl border border-white/10 px-4 py-2 text-xs font-semibold text-white hover:bg-white/5 transition"
+            >
+              Review in add tab
+            </button>
+            <button
+              onClick={onSendQueued}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] px-4 py-2 text-xs font-semibold text-[#0b0b18] transition hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" />
+              Track slip now
+            </button>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between text-xs text-gray-400">
-        <button
-          onClick={onManualRefresh}
-          className="inline-flex items-center gap-2 rounded-full border border-[var(--accent-border)] px-3 py-1 text-[var(--accent-2)] hover:bg-[var(--accent-soft)] transition"
-        >
-          Refresh now
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onManualRefresh}
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--accent-border)] px-3 py-1 text-[var(--accent-2)] hover:bg-[var(--accent-soft)] transition"
+          >
+            Refresh now
+          </button>
+          <button
+            onClick={clearLegs}
+            className="inline-flex items-center gap-2 rounded-full border border-rose-500/30 px-3 py-1 text-rose-200 transition hover:bg-rose-500/10"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete all
+          </button>
+        </div>
         <span>
           {lastUpdate
             ? `Last update: ${lastUpdate.toLocaleTimeString()}`
@@ -429,6 +530,93 @@ function TrackList({ legs, updateStatus, removeLeg, onAddClick, onManualRefresh,
   );
 }
 
+function QueueDrawer({ items, open, onToggle, onRemove, onSend, onAddMore }) {
+  const count = items.length;
+  if (!count) return null;
+
+  return (
+    <>
+      {!open && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-3 z-40 flex justify-center">
+          <button
+            onClick={onToggle}
+            className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-white/10 bg-[var(--panel)] px-4 py-2 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(0,0,0,0.5)] transition hover:bg-white/5"
+          >
+            <span>Slip ({count})</span>
+            <ChevronUp className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      <div
+        className={`pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center transition-transform duration-300 ease-out ${
+          open ? "translate-y-0" : "translate-y-full"
+        }`}
+      >
+        <div className="pointer-events-auto w-full max-w-4xl rounded-t-3xl border border-white/10 bg-[var(--panel)] shadow-[0_30px_60px_rgba(0,0,0,0.55)] backdrop-blur-md">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+            <div>
+              <p className="text-base font-semibold text-white">
+                Slip ({count})
+              </p>
+              <p className="text-xs text-gray-400">
+                Pull up to review and track your picks.
+              </p>
+            </div>
+            <button
+              onClick={onSend}
+              className="inline-flex items-center gap-2 rounded-2xl bg-[var(--accent)] px-4 py-2 text-xs font-semibold text-[#0b0b18] transition hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" />
+              Track slip
+            </button>
+          </div>
+
+          <div className="max-h-64 overflow-y-auto px-4 py-3 space-y-3">
+            {items.map((leg) => (
+              <div
+                key={leg.id}
+                className="flex items-start justify-between gap-3 rounded-2xl border border-white/5 bg-[#0f1325] px-4 py-3 text-sm text-white"
+              >
+                <div className="flex flex-col">
+                  <span className="font-semibold">{leg.player}</span>
+                  <span className="text-xs text-gray-400">
+                    {leg.direction ? leg.direction.toUpperCase() : ""}{" "}
+                    {leg.prop} {leg.line ? `@ ${leg.line}` : ""}
+                  </span>
+                </div>
+                <button
+                  onClick={() => onRemove?.(leg.id)}
+                  className="inline-flex items-center gap-2 rounded-full border border-rose-500/40 px-3 py-1 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/10"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-2 border-t border-white/5 px-4 py-3">
+            <button
+              onClick={onAddMore}
+              className="flex-1 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/5"
+            >
+              Add more
+            </button>
+            <button
+              onClick={onSend}
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-[#0b0b18] transition hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" />
+              Track slip
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 function LegCard({ leg, updateStatus, removeLeg }) {
   const statusTone =
     leg.status === "hit"
@@ -443,6 +631,10 @@ function LegCard({ leg, updateStatus, removeLeg }) {
     leg.line && leg.result
       ? Math.min(100, Math.round((leg.result / leg.line) * 100))
       : 0;
+  const progressTone =
+    progress >= 100 || leg.status === "hit"
+      ? "bg-emerald-400"
+      : "bg-rose-500";
 
   return (
     <div className="rounded-3xl border border-[rgba(0,255,180,0.15)] bg-[var(--card-strong)] p-4 shadow-[0_20px_40px_rgba(0,0,0,0.35)]">
@@ -480,7 +672,7 @@ function LegCard({ leg, updateStatus, removeLeg }) {
 
       <div className="mt-3 h-3 rounded-full bg-[#111]">
         <div
-          className="h-full rounded-full bg-[var(--accent)] transition-all"
+          className={`h-full rounded-full transition-all ${progressTone}`}
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -719,9 +911,9 @@ function AddPanel({ onSubmit, panelRef }) {
     >
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xl font-semibold text-white">New line</p>
+          <p className="text-xl font-semibold text-white">Add picks</p>
           <p className="text-sm text-gray-400">
-            Add a line to your slip to start monitoring. Current stats will
+            Add a bet to your slip to start monitoring. Current stats will
             update automatically.
           </p>
         </div>
@@ -754,7 +946,7 @@ function AddPanel({ onSubmit, panelRef }) {
                   : "border-white/10 bg-white/5 text-gray-300"
               }`}
             >
-              {value === "player" ? "Player Stat" : value}
+              {value === "player" ? "Player Prop" : value === "winner" ? "ML" : value}
             </button>
           ))}
         </div>
@@ -795,7 +987,7 @@ function AddPanel({ onSubmit, panelRef }) {
         </div>
 
             <StatSelect
-              label="Stat"
+              label="Prop"
               value={prop}
               onChange={setProp}
               options={statOptions}
@@ -839,10 +1031,12 @@ function AddPanel({ onSubmit, panelRef }) {
         {type !== "winner" && (
           <div className="grid grid-cols-2 gap-3">
             <Field
-          label={type === "spread" ? "Spread line" : "Line"}
+              label={type === "spread" ? "Spread line" : "Line"}
               value={line}
               onChange={setLine}
               placeholder={type === "spread" ? "-7" : "225.5"}
+              inputMode="decimal"
+              pattern="[-]?[0-9]*[.,]?[0-9]*"
             />
             <div>
               <p className="mb-2 text-sm font-semibold text-gray-200">
@@ -873,20 +1067,33 @@ function AddPanel({ onSubmit, panelRef }) {
           className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] px-4 py-3 text-base font-semibold text-[#0b0b18] transition hover:opacity-90"
         >
           <Plus className="h-5 w-5" />
-          Add line
+          Add to slip
         </button>
       </form>
+
     </div>
   );
 }
 
-function Field({ label, value, onChange, placeholder, icon }) {
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+  icon,
+  type = "text",
+  inputMode,
+  pattern,
+}) {
   return (
     <label className="block space-y-2">
       <span className="text-sm font-semibold text-gray-200">{label}</span>
       <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-white focus-within:border-[var(--accent-border)] focus-within:bg-[var(--accent-faint)]">
         {icon && icon}
         <input
+          type={type}
+          inputMode={inputMode}
+          pattern={pattern}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
@@ -1096,7 +1303,7 @@ function StatSelect({
           className="flex w-full items-center justify-between gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-left text-sm text-white transition focus:outline-none focus:ring-2 focus:ring-[var(--accent-border)] focus:border-[var(--accent-border)]"
         >
           <span className={selected ? "text-white" : "text-gray-500"}>
-            {selected || "Select stat..."}
+            {selected || "Select prop..."}
           </span>
           <ChevronDown className="h-4 w-4 text-gray-400" />
         </button>

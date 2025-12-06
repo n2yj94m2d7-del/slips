@@ -1,7 +1,7 @@
 const statusOptions = [
-  { value: "pending", label: "Pending" },
-  { value: "won", label: "Won" },
-  { value: "lost", label: "Lost" },
+  { value: "pending", label: "waiting" },
+  { value: "won", label: "hit" },
+  { value: "lost", label: "miss" },
 ];
 
 export default function LineItem({ line, updateStatus, removeLine }) {
@@ -11,7 +11,7 @@ export default function LineItem({ line, updateStatus, removeLine }) {
         <p className="font-semibold text-lg">{line.player}</p>
         <p className="text-sm text-gray-300">{line.prop}</p>
         {line.odds && (
-          <p className="text-xs text-gray-400">Odds: {line.odds}</p>
+          <p className="text-xs text-gray-400">Odds — {line.odds}</p>
         )}
       </div>
 
@@ -30,9 +30,9 @@ export default function LineItem({ line, updateStatus, removeLine }) {
 
         <button
           onClick={() => removeLine(line.id)}
-          className="rounded-lg border border-red-400/70 text-red-300 px-3 py-2 text-sm hover:bg-red-500/10 transition"
+          className="rounded-lg border border-red-400/70 text-red-300 px-3 py-2 text-base font-bold hover:bg-red-500/10 transition"
         >
-          Remove
+          ×
         </button>
       </div>
     </div>
