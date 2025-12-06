@@ -1113,6 +1113,8 @@ function PlayerField({
   isSearching,
   liveLoading,
 }) {
+  const inputRef = useRef(null);
+
   return (
     <label className="block space-y-2">
       <span className="text-sm font-semibold text-gray-200">{label}</span>
@@ -1120,6 +1122,7 @@ function PlayerField({
         <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-white transition focus-within:border-[var(--accent-border)] focus-within:bg-[var(--accent-faint)] focus-within:ring-2 focus-within:ring-[var(--accent-border)]">
           <User className="h-4 w-4 text-gray-500" />
           <input
+            ref={inputRef}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder="Search player..."
@@ -1137,7 +1140,10 @@ function PlayerField({
               <button
                 key={player.id}
                 type="button"
-                onClick={() => onSelect(player)}
+                onClick={() => {
+                  onSelect(player);
+                  inputRef.current?.blur();
+                }}
                 className="flex w-full items-center gap-3 px-3 py-3 text-left text-sm text-white hover:bg-white/5"
               >
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-soft)]">
