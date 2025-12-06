@@ -306,8 +306,8 @@ export default function App() {
           <AddPanel
             onSubmit={addLegToQueue}
             panelRef={addPanelRef}
-            containerClassName="flex-1 overflow-hidden rounded-3xl border border-white/5 bg-[var(--panel)] p-5 shadow-[0_20px_50px_rgba(0,0,0,0.45)]"
-            scrollClassName="mt-4 space-y-4 overflow-y-auto pr-1 pb-8 max-h-[calc(100vh-220px)]"
+            containerClassName="overflow-hidden rounded-3xl border border-white/5 bg-[var(--panel)] p-5 shadow-[0_20px_50px_rgba(0,0,0,0.45)] flex flex-col"
+            scrollClassName="mt-4 space-y-4 pr-1 pb-2"
           />
         )}
 
@@ -929,7 +929,7 @@ function AddPanel({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex h-full flex-col gap-2">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2">
         <div className={`${scrollClassName} flex-1 overflow-y-auto pr-1`}>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {["player", "spread", "total", "winner"].map((value) => (
@@ -1040,7 +1040,7 @@ function AddPanel({
           )}
 
           {type !== "winner" && (
-            <div className="grid grid-cols-2 items-end gap-3">
+            <div className="grid grid-cols-3 items-end gap-3">
               <Field
                 label={type === "spread" ? "Spread line" : "Line"}
                 value={line}
@@ -1049,22 +1049,20 @@ function AddPanel({
                 inputMode="decimal"
                 pattern="[-]?[0-9]*[.,]?[0-9]*"
               />
-              <div className="flex items-end gap-2">
-                {["over", "under"].map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setDirection(value)}
-                    className={`w-full rounded-2xl border px-4 py-2.5 text-sm font-semibold capitalize transition ${
-                      direction === value
-                        ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                        : "border-white/10 bg-white/5 text-gray-300"
-                    }`}
-                  >
-                    {value === "over" ? "↗ Over" : "↘ Under"}
-                  </button>
-                ))}
-              </div>
+              {["over", "under"].map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setDirection(value)}
+                  className={`flex w-full min-w-0 items-center justify-center rounded-2xl border px-4 py-2.5 text-sm font-semibold capitalize transition ${
+                    direction === value
+                      ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                      : "border-white/10 bg-white/5 text-gray-300"
+                  }`}
+                >
+                  {value === "over" ? "↗ Over" : "↘ Under"}
+                </button>
+              ))}
             </div>
           )}
 
