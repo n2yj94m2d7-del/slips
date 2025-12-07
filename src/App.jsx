@@ -119,6 +119,11 @@ const statOptions = [
 ];
 
 const defaultModes = ["add", "tracking"];
+const STORAGE_KEYS = {
+  legs: "bpt_legs",
+  queued: "bpt_queued_legs",
+  mode: "bpt_mode",
+};
 
 export default function App() {
   const [mode, setMode] = useState("add");
@@ -129,6 +134,7 @@ export default function App() {
   const tickRef = useRef(null);
   const [showSplash, setShowSplash] = useState(true);
   const [showQueueDrawer, setShowQueueDrawer] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
 
   const liveCount = useMemo(
     () => legs.filter((leg) => leg.status === "live").length,
@@ -302,6 +308,67 @@ export default function App() {
       if (tickRef.current) clearInterval(tickRef.current);
     };
   }, []);
+
+  // Load persisted slips on mount
+  useEffect(() => {
+    try {
+      if (typeof localStorage === "undefined") return;
+      const savedLegs = localStorage.getItem(STORAGE_KEYS.legs);
+      const savedQueued = localStorage.getItem(STORAGE_KEYS.queued);
+      const savedMode = localStorage.getItem(STORAGE_KEYS.mode);
+
+      if (savedLegs) {
+        const parsed = JSON.parse(savedLegs);
+        if (Array.isArray(parsed)) {
+          setLegs(parsed);
+        }
+      }
+      if (savedQueued) {
+        const parsed = JSON.parse(savedQueued);
+        if (Array.isArray(parsed)) {
+          setQueuedLegs(parsed);
+        }
+      }
+      if (savedMode && defaultModes.includes(savedMode)) {
+        setMode(savedMode);
+      }
+    } catch (err) {
+      // ignore bad storage
+    } finally {
+      setHydrated(true);
+    }
+  }, []);
+
+  // Persist slips when they change
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      if (typeof localStorage === "undefined") return;
+      localStorage.setItem(STORAGE_KEYS.legs, JSON.stringify(legs));
+    } catch (err) {
+      // ignore storage errors
+    }
+  }, [legs, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      if (typeof localStorage === "undefined") return;
+      localStorage.setItem(STORAGE_KEYS.queued, JSON.stringify(queuedLegs));
+    } catch (err) {
+      // ignore storage errors
+    }
+  }, [queuedLegs, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      if (typeof localStorage === "undefined") return;
+      localStorage.setItem(STORAGE_KEYS.mode, mode);
+    } catch (err) {
+      // ignore storage errors
+    }
+  }, [mode, hydrated]);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 1300);
