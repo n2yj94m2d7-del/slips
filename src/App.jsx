@@ -1256,7 +1256,7 @@ function AddPanel({
                 label={type === "spread" ? "Spread line" : "Line"}
                 value={line}
                 onChange={setLine}
-                placeholder={type === "spread" ? "-7" : "225.5"}
+                placeholder={type === "spread" ? "6.5" : "225.5"}
                 inputMode="decimal"
                 pattern="[-]?[0-9]*[.,]?[0-9]*"
                 allowNegative={type === "spread"}
@@ -1321,10 +1321,10 @@ function Field({
                   : `-${value || ""}`
               )
             }
-            className="rounded-xl border border-white/10 bg-white/10 px-2 py-1 text-sm font-semibold text-white transition hover:bg-white/20"
+            className="shrink-0 flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-[var(--accent-soft)] text-[var(--accent)] text-base font-semibold transition hover:bg-[var(--accent-soft)]/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-border)]"
             aria-label="Toggle negative"
           >
-            -/+
+            ±
           </button>
         )}
         <input
