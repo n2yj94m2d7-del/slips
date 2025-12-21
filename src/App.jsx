@@ -1259,6 +1259,7 @@ function AddPanel({
                 placeholder={type === "spread" ? "-7" : "225.5"}
                 inputMode="decimal"
                 pattern="[-]?[0-9]*[.,]?[0-9]*"
+                allowNegative={type === "spread"}
               />
               {type !== "spread" &&
                 ["over", "under"].map((value) => (
@@ -1303,12 +1304,29 @@ function Field({
   type = "text",
   inputMode,
   pattern,
+  allowNegative = false,
 }) {
   return (
     <label className="block space-y-2">
       <span className="text-sm font-semibold text-gray-200">{label}</span>
       <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-white focus-within:border-[var(--accent-border)] focus-within:bg-[var(--accent-faint)]">
         {icon && icon}
+        {allowNegative && (
+          <button
+            type="button"
+            onClick={() =>
+              onChange(
+                value?.startsWith?.("-")
+                  ? value.slice(1)
+                  : `-${value || ""}`
+              )
+            }
+            className="rounded-xl border border-white/10 bg-white/10 px-2 py-1 text-sm font-semibold text-white transition hover:bg-white/20"
+            aria-label="Toggle negative"
+          >
+            -/+
+          </button>
+        )}
         <input
           type={type}
           inputMode={inputMode}
